@@ -1,0 +1,15 @@
+# vscode config
+.vscode
+__pycache__
+
+# virtualenv
+.venv38
+.venv39
+.venv310
+
+# package
+Metaworld
+
+# Model and Datasets
+datasets/*
+!datasets/README.md
