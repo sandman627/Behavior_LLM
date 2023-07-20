@@ -11,15 +11,16 @@ import numpy
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision
 
 from transformers import AutoTokenizer, AutoProcessor, AutoModelForCausalLM
 from transformers import BertConfig, BertTokenizer, BertModel
 from transformers import LlamaTokenizer, LlamaForCausalLM
 from transformers import GenerationConfig
 
+# from datasets import Image
 
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from parameters import device
 
 
 class Prompt_Model(nn.Module):
@@ -35,6 +36,8 @@ class Prompt_Model(nn.Module):
         output = input
         return output
 
+
+
 class Image_Captioning_Model(nn.Module):
     """
     Image Captioning Model for getting Natural Language Caption from given Image
@@ -45,15 +48,19 @@ class Image_Captioning_Model(nn.Module):
         self.model = AutoModelForCausalLM.from_pretrained("microsoft/git-base-coco")
         
     def forward(self, initial_obs):
-        if os.path.isfile(initial_obs):
-            raw_image = Image.open(initial_obs).convert("RGB")
-        else:
-            raw_image = initial_obs
-            
+        raw_image = self.read_img(initial_obs)
         pixel_values = self.processor(images=raw_image, return_tensors="pt").pixel_values
         generated_ids = self.model.generate(pixel_values=pixel_values, max_length=50)
         image_cap = self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
         return image_cap
+
+    def read_img(self, initial_obs):
+        if os.path.isfile(initial_obs):
+            raw_image = Image.open(initial_obs).convert("RGB")
+        else:
+            raw_image = initial_obs
+        # raw_image = torchvision.io.read_image(initial_obs)
+        return raw_image
 
 
 
@@ -80,7 +87,7 @@ class Behavior_LLM(nn.Module):
             "wordcab/llama-natural-instructions-7b",
             load_in_8bit=True,
             torch_dtype=torch.float16,
-            device_map="auto",
+            device_map=0,
         )
         
         self.llm_model.eval()

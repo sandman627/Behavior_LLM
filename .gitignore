@@ -9,7 +9,12 @@ __pycache__
 
 # package
 Metaworld
+Metaworld-2.0.0
 
 # Model and Datasets
 datasets/*
 !datasets/README.md
+
+
+# etc
+temp

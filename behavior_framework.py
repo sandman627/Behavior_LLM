@@ -11,14 +11,22 @@ import torch.nn.functional as F
 
 from behavior_models import Image_Captioning_Model, Behavior_LLM, SkillEmbedder
 
+import parameters
+from parameters import device
+
 
 class FrontPart(torch.nn.Module):
     def __init__(self):
         super().__init__()
         
+        # Front Part
         self.image_cap_model = Image_Captioning_Model()
         self.behavior_LLM = Behavior_LLM()
         self.skill_embedder = SkillEmbedder()
+        
+        # Rear Part
+        
+        pass
 
     def forward(self, instruction, initial_obs):
         
@@ -39,6 +47,8 @@ if __name__=="__main__":
     print("Running Behavior LLM framework!!")
     
     test_model = FrontPart()
+    # test_model = nn.DataParallel(test_model)
+    # test_model.to(device=device)
     
     test_obs = "./datasets/drawer_and_ball.png"
     # test_obs = f"I am in the kitchen. There are egg, flour, milk in the refrigerator and salt, suger in the cabinet. I want to make breakfast. what should I do?\n"
