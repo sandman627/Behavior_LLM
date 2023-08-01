@@ -10,10 +10,14 @@ __pycache__
 # package
 Metaworld
 Metaworld-2.0.0
+stable-baselines3
 
 # Model and Datasets
 datasets/*
 !datasets/README.md
+
+# Model Checkpoints
+logs
 
 
 # etc

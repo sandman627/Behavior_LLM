@@ -109,9 +109,9 @@ class Behavior_LLM(nn.Module):
         
                
     def forward(self, instruction, observation):
+        print("Instruction : ", instruction)        
         print("observation : ", observation)
-        print("Instruction : ", instruction)
-        
+
         prompt = self.generate_prompt(instruction, observation,)
         inputs = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True, max_length=2048)
         input_ids = inputs["input_ids"].to(self.llm_model.device)

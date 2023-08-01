@@ -1,12 +1,14 @@
 
 From nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
+
+RUN apt-get update
+
 RUN \
-    apt-get update && \
     apt-get install -y git && \
-    apt-get install -y python3-pip
+    apt-get install -y python3-pip && \
+    apt-get install python3-dev
 
-
-
+RUN apt-get install libosmesa6-dev
 
 
 RUN \
@@ -25,7 +27,6 @@ RUN \
 
 
 # Mujoco
-
 RUN \
     apt install libosmesa6-dev libgl1-mesa-glx libglfw3
     apt install patchelf
@@ -33,7 +34,9 @@ RUN \
 RUN \
     pip install -U 'mujoco-py<2.2,>=2.1'
     pip install "cython<3"
+    pip install gymnasium==0.29.0
     
 # RUN \
 #     export MUJOCO_PY_MUJOCO_PATH=/workspace/.mujoco/mujoco210
+#     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/workspace/.mujoco/mujoco210/bin
 
