@@ -14,7 +14,7 @@ Transformer 최신버전을 사용하기 위해서는 pytorch 2.0.0 이상을 �
 이상하게도 Terminal을 한번 키고 닫을때마다 이렇게 export 해줘야함.
 
 
-'''
+```
 export MUJOCO_PY_MUJOCO_PATH=/workspace/.mujoco/mujoco210
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/workspace/.mujoco/mujoco210/bin
-'''
+```
