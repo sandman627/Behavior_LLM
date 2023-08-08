@@ -16,6 +16,12 @@ print('Count of using GPUs:', torch.cuda.device_count())
 
 
 
+def inference_singe():
+    pass
+
+
+
+
 
 
 

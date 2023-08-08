@@ -9,6 +9,7 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 
+from PIL import Image
 import matplotlib.pyplot as plt
 
 import gymnasium as gym
@@ -28,7 +29,10 @@ from behavior_models import Image_Captioning_Model, Behavior_LLM, SkillEmbedder
 from behavior_policy import CustomCombinedExtractor, CustomMultiInputActorCriticPolicy
 import metaworld_env
 
-
+# virtual display for headless mujoco
+from pyvirtualdisplay import Display
+display = Display(visible=0, size=(1400, 900))
+display.start()
 
 
 # Class for MetaWorld
@@ -77,8 +81,86 @@ def render(env:gym.Env, offscreen=True, camera_name='corner3', resolution=(640, 
 
 
 
+def train_single_step_tasks():
+    ## Get Behavior LLM
+    test_model = Front_Part()
+
+    ml10 = metaworld.ML10() # Construct the benchmark, sampling tasks
+
+    training_envs = []
+    env_checks=[]
+    for name, env_cls in ml10.train_classes.items():        
+        env = env_cls(render_mode='rgb_array')
+        task = random.choice([task for task in ml10.train_tasks if task.env_name == name])
+        env.set_task(task)
+        
+        state, _ = env.reset()
+        # print(vars(env))
+        # exit()
+        
+        # env_checks.append([name, env.observation_space.shape])
+        # print("env obs shape : ", env.observation_space)
+        
+        ## Get initial observation of environment
+        initial_obs = env.render()
+        Image.fromarray(initial_obs).save("test.png")
+        
+        ## get skill sequence embedding
+        output = test_model(initial_obs=initial_obs, instruction=name)
+        print(f"Name: {name}, Output : {output.shape}")        
+        
+        env = TimeLimit(env, max_episode_steps=1000)
+        env = metaworld_env.BehaviorWrapper(env, name, output)
+        
+        training_envs.append(env)
+    # print("Num of Training ENVs : ", len(training_envs))
+    # print("ENV check : ", env_checks)
+    # exit()
+    
+    
+    ## Get Model
+    policy_kwargs = dict(
+        features_extractor_class=CustomCombinedExtractor,
+    )
+    model = PPO(policy="MultiInputPolicy", env=env, policy_kwargs=policy_kwargs)
+        
+    
+    # Multi Task Env Wrapper
+    env = metaworld_env.MultiTaskWrapper(training_envs)    
+    
+    
+    ## Learn the Model
+    checkpoint_callback = CheckpointCallback(
+        save_freq=10,
+        save_path="./logs/",
+        name_prefix="bllm_rl_model",
+        save_replay_buffer=True,
+        save_vecnormalize=True,
+    )
+    eval_callback = EvalCallback(
+        eval_env=env, 
+        best_model_save_path="./logs/best_model",
+        log_path="./logs/results",
+        eval_freq=50
+    )
+    callback = CallbackList([checkpoint_callback, eval_callback])
+    model.learn(total_timesteps=100, callback=callback, progress_bar=True)
+    
+    
+    pass
+
+
+
+
+
+
 if __name__=="__main__":
     print("Training Behavior LLM framework!!")
+    
+    train_single_step_tasks()
+    
+    exit()
+    
     
     ## Environment declare and setting
     print(metaworld.ML1.ENV_NAMES)  # Check out the available environments
@@ -95,10 +177,10 @@ if __name__=="__main__":
     print("Task : ", task)
     print("OBS : ", obs.shape)
     
-    env.render()
-    exit()
+    img = env.render()
+    Image.fromarray(img).save("test.png")
+    print(img)
     env = TimeLimit(env, max_episode_steps=1000)
-    
     
     
     ## Get Behavior LLM
@@ -159,4 +241,4 @@ if __name__=="__main__":
     
     callback = CallbackList([checkpoint_callback, eval_callback])
     
-    # model.learn(total_timesteps=10000, callback=callback, progress_bar=True)
+    model.learn(total_timesteps=10000, callback=callback, progress_bar=True)

@@ -109,8 +109,8 @@ class Behavior_LLM(nn.Module):
         
                
     def forward(self, instruction, observation):
-        print("Instruction : ", instruction)        
-        print("observation : ", observation)
+        print("High Instruction : ", instruction)        
+        print("Text observation : ", observation)
 
         prompt = self.generate_prompt(instruction, observation,)
         inputs = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True, max_length=2048)
@@ -170,7 +170,7 @@ class SkillEmbedder(nn.Module):
 
     def forward(self, skill_descriptions):
         inputs = self.tokenizer(skill_descriptions, return_tensors='pt')
-        outputs = self.model(**inputs)
-        skill_embeddings = outputs[0] # last hidden state of bert model
+        outputs = self.model(**inputs)  # (batch_size, sequence_length, hidden_size)
+        skill_embeddings = outputs[0]  # last hidden state of bert model
         return skill_embeddings
         

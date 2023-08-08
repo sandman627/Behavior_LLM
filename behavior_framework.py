@@ -33,6 +33,8 @@ class Front_Part(torch.nn.Module):
     def __init__(self):
         super().__init__()
 
+        self.task_prompt = "In this task, you have to analye the situation and present step by step procedure to solve the problem."
+
         # Front Part
         self.image_cap_model = Image_Captioning_Model()
         self.behavior_LLM = Behavior_LLM()
@@ -42,17 +44,18 @@ class Front_Part(torch.nn.Module):
         pass
 
 
-    def forward(self, instruction, initial_obs):
+    def forward(self,initial_obs, instruction):
         
         image_cap = self.image_cap_model(initial_obs)
-        print("image cap : ", image_cap)
-        given_situation = image_cap + "I want to hide the ball"
+        # print("image cap : ", image_cap)
 
-        skill_description_seq = self.behavior_LLM(instruction, given_situation)
-        print("skill des seq : ", skill_description_seq)
+        initial_input = image_cap + instruction
+
+        skill_description_seq = self.behavior_LLM(self.task_prompt, initial_input)
+        # print("skill des seq : ", skill_description_seq)
         
         skill_embedding_seq = self.skill_embedder(skill_description_seq)
-        print("skill emb seq : ", skill_embedding_seq)
+        # print("skill emb seq : ", skill_embedding_seq)
         
         return skill_embedding_seq.numpy()
 

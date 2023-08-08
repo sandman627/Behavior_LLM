@@ -1,5 +1,8 @@
+from typing import Any, Union, List
+
 import random
 import inspect
+from gymnasium.core import Env
 import numpy as np
 
 import gymnasium as gym
@@ -13,14 +16,14 @@ from stable_baselines3.common.env_checker import check_env
 # ml10 = metaworld.ML10() # Construct the benchmark, sampling tasks
 # mt10 = metaworld.MT10() # Construct the benchmark, sampling tasks
 
-
 class BehaviorWrapper(gym.Wrapper):
-    def __init__(self, env, skill_embedding_sequence):
+    def __init__(self, env, env_task_name, skill_embedding_sequence):
         super().__init__(env)
         self.env = env
-        self.skill_embedding_sequence = skill_embedding_sequence.flatten()
+        self.env_task_name = env_task_name
+        self.skill_embedding_sequence = self.skill_embedding_padding(skill_embedding_sequence).flatten()
         
-        # print(self.skill_embedding_sequence.shape)
+        # print("skill emb size : ", self.skill_embedding_sequence.shape)
         # exit()
         
         self.observation_space = spaces.Dict({
@@ -53,6 +56,47 @@ class BehaviorWrapper(gym.Wrapper):
         }        
         
         return obs, info
+    
+    def skill_embedding_padding(self, skill_embedding, max_seq_len:int=128):
+        pad_size = max_seq_len - np.shape(skill_embedding)[1]
+        padded_skill_emb = np.pad(skill_embedding, pad_width=((0,0), (0,pad_size), (0,0)), mode='constant', constant_values=0)
+        return padded_skill_emb
+    
+    
+class MultiTaskWrapper(gym.Wrapper):
+    def __init__(self, env_list: List[Env]):
+        if isinstance(env_list, Env):
+            print("Single Env came in. Need List of Envs")
+            exit()
+        super().__init__(env=env_list[0])
+        self.env_list = env_list 
+        self.env = env_list[0]
+        
+    def step(self, action):
+        return self.env.step(action)
+        
+    def reset(self, seed=None, options=None) -> tuple[Any, dict[str, Any]]:
+        self.env = self.pick_env()
+        return self.env.reset(seed=None, options=None)
+    
+    def pick_env(self) -> Env:
+        return random.choice(self.env_list)
+        
+    # def _check_Envs(self):
+    #     print(f"Env Info : \n\t name({env.fullpath}) \n\t obs_space({env.observation_space}), \n\t act_space({env.action_space})")
+    #     pass
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
     
     
 class MetaWorldEnv(gym.Env):

@@ -1,3 +1,52 @@
+import numpy as np
+
+
+a = [[[1,2],[3,4]]]
+a = np.arange(72).reshape((2,4,9))
+ar_a = np.array(a)
+print(np.shape(ar_a))
+print(ar_a)
+
+
+arr = np.reshape(ar_a, (-1, 4, 18))
+print(np.shape(arr))
+print(arr)
+
+print("padding test")
+max_len = 6
+ppp = max_len - np.shape(ar_a)[1]
+pad_arr = np.pad(ar_a, pad_width=((0, 0),(0, ppp), (0,0)), mode='constant', constant_values=0)
+print(ar_a)
+print(pad_arr)
+print(f"{np.shape(ar_a)} to {np.shape(pad_arr)}")
+
+
+
+
+
+def test_f1(**kwargs):
+    print("F 1")
+    for k,v in kwargs.items():
+        print(f"f1 {k}: {v}")
+    return test_f2(**kwargs)
+
+def test_f2(**kwargs):
+    print("F 2")
+    for k,v in kwargs.items():
+        print(f"f2 {k}: {v}")
+    return 0
+
+
+tata = {
+    "name" : "jjj",
+    "age" : 12,
+    "etc" : "dumdum"
+}
+
+test_f1(**tata)
+print(type(tata))
+print(type(**tata))
+
 '''
 import mujoco_py
 import os
@@ -107,33 +156,33 @@ assert not (next_obs1[-3:] == np.zeros(3)).all()   # The env's are goal observab
 '''
 
 
-import metaworld
-import random
+# import metaworld
+# import random
 
-print(metaworld.ML1.ENV_NAMES)  # Check out the available environments
+# print(metaworld.ML1.ENV_NAMES)  # Check out the available environments
 
-ml1 = metaworld.ML1('pick-place-v2') # Construct the benchmark, sampling tasks
+# ml1 = metaworld.ML1('pick-place-v2') # Construct the benchmark, sampling tasks
 
-env = ml1.train_classes['pick-place-v2']()  # Create an environment with task `pick_place`
-task = ml1.train_tasks[0]
-env.set_task(task)  # Set task
-
-
-obs = env.reset()  # Reset environment
-a = env.action_space.sample()  # Sample an action
-obs, reward, done, truncated, info = env.step(a)  # Step the environment with the sampled random action
+# env = ml1.train_classes['pick-place-v2']()  # Create an environment with task `pick_place`
+# task = ml1.train_tasks[0]
+# env.set_task(task)  # Set task
 
 
-
-print(f"action space : ", env.action_space)
-print(f"observation space : ", env.observation_space)
-
-print(f"task: {type(task)}\n\t", task)
-
-print(f"a : {type(a)}\n\t", a.shape, a.dtype, a)
-print(f"obs : {type(obs)}\n\t", obs.shape, obs.dtype, obs)
+# obs = env.reset()  # Reset environment
+# a = env.action_space.sample()  # Sample an action
+# obs, reward, done, truncated, info = env.step(a)  # Step the environment with the sampled random action
 
 
-print(f"reward : {type(reward)}\n\t", reward)
-print(f"done : {type(done)}\n\t", done)
-print(f"info : {type(info)}\n\t", info)
+
+# print(f"action space : ", env.action_space)
+# print(f"observation space : ", env.observation_space)
+
+# print(f"task: {type(task)}\n\t", task)
+
+# print(f"a : {type(a)}\n\t", a.shape, a.dtype, a)
+# print(f"obs : {type(obs)}\n\t", obs.shape, obs.dtype, obs)
+
+
+# print(f"reward : {type(reward)}\n\t", reward)
+# print(f"done : {type(done)}\n\t", done)
+# print(f"info : {type(info)}\n\t", info)
