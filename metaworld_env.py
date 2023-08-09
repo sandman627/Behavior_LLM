@@ -44,12 +44,7 @@ class BehaviorWrapper(gym.Wrapper):
         return next_state, reward, done, truncated, info
     
     def reset(self, seed=None, options=None):
-        self.curr_path_length = 0
-        obs, info = super().reset()
-        self._prev_obs = obs[:18].copy()
-        obs[18:36] = self._prev_obs
-        obs = np.float64(obs)
-        
+        obs, info = self.env.reset()
         obs={
             "obs": obs,
             "skill": self.skill_embedding_sequence
@@ -57,10 +52,85 @@ class BehaviorWrapper(gym.Wrapper):
         
         return obs, info
     
-    def skill_embedding_padding(self, skill_embedding, max_seq_len:int=128):
+    def skill_embedding_padding(self, skill_embedding, max_seq_len:int=256):
         pad_size = max_seq_len - np.shape(skill_embedding)[1]
         padded_skill_emb = np.pad(skill_embedding, pad_width=((0,0), (0,pad_size), (0,0)), mode='constant', constant_values=0)
         return padded_skill_emb
+    
+    
+    
+    
+
+class BehaviorMultiWrapper(gym.Wrapper):
+    def __init__(self, env, env_task_name):
+        super().__init__(env)
+        print("BehaviorMultiWrapper ", env_task_name)
+        
+        self.env = env
+        self.env_task_name = env_task_name
+        self.initial_step = 0
+
+        image_obs = env.render()  # get image shape
+        # print("image obs shape : ", image_obs.shape)
+        # exit()
+        
+        # temporary dictionary for high instruction. need adjustment
+        self.high_instruction_dict = {
+            0: 'reach-v2', 
+            1: 'push-v2', 
+            2: 'pick-place-v2', 
+            3: 'door-open-v2', 
+            4: 'drawer-close-v2', 
+            5: 'button-press-topdown-v2', 
+            6: 'peg-insert-side-v2', 
+            7: 'window-open-v2', 
+            8: 'sweep-v2', 
+            9: 'basketball-v2'
+        }
+        
+        self.observation_space = spaces.Dict({
+            "obs": env.observation_space,
+            "image_obs": spaces.Box(low=0, high=255, shape=image_obs.shape, dtype=image_obs.dtype),
+            "initial_step": spaces.Discrete(2),
+            # "high_instruction": spaces.Text(min_length=1, max_length=64),
+            "high_instruction": spaces.Discrete(10)
+        })
+        
+        # "skill": spaces.Box(low=-np.inf, high=np.inf, shape=self.skill_embedding_sequence.shape),
+        
+    def step(self, action):
+        next_state, reward, done, truncated, info = self.env.step(action)
+        # modify ...
+        
+        self.initial_step = 1
+        
+        # concate
+        next_state={
+            "obs": next_state,
+            "image_obs": self.env.render(),
+            "initial_step": self.initial_step,
+            "high_instruction": self.env_task_name,
+        }
+        
+        return next_state, reward, done, truncated, info
+    
+    def reset(self, seed=None, options=None):
+        self.curr_path_length = 0
+        self.initial_step = 0
+        obs, info = self.env.reset()
+        
+        obs={
+            "obs": obs,
+            "image_obs": self.env.render(),
+            "initial_step": self.initial_step,
+            "high_instruction": self.env_task_name,
+        }
+        # print("ddtype : ", type(obs["high_instruction"]))
+        
+        return obs, info
+    
+    
+    
     
     
 class MultiTaskWrapper(gym.Wrapper):

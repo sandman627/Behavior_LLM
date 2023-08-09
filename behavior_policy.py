@@ -1,4 +1,7 @@
 from typing import Any, Dict, List, Optional, Type, Union
+
+import numpy as np
+
 import torch as th
 from torch import nn
 import torch.nn as nn
@@ -11,6 +14,11 @@ from stable_baselines3.common.policies import MultiInputActorCriticPolicy
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor, CombinedExtractor
 
 from stable_baselines3.common.type_aliases import Schedule
+
+from behavior_framework import Front_Part
+from behavior_models import Image_Captioning_Model
+
+
 
 
 
@@ -50,9 +58,77 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
             encoded_tensor_list.append(extractor(observations[key]))
         # Return a (B, self._features_dim) PyTorch tensor, where B is batch dimension.
         return th.cat(encoded_tensor_list, dim=1)
+
+
+
+
+
+
+class CustomCombinedMultiExtractor(BaseFeaturesExtractor):
+    def __init__(self, observation_space: spaces.Dict):
+        super().__init__(observation_space, features_dim=1)
+        # print("CustomCombinedMultiExtractor")
+
+        # hate this code
+        self.high_instruction_dict = {
+            0: 'reach-v2', 
+            1: 'push-v2', 
+            2: 'pick-place-v2', 
+            3: 'door-open-v2', 
+            4: 'drawer-close-v2', 
+            5: 'button-press-topdown-v2', 
+            6: 'peg-insert-side-v2', 
+            7: 'window-open-v2', 
+            8: 'sweep-v2', 
+            9: 'basketball-v2'
+        }
+
+        # Encoder for initial Skill Embedding
+        ## This part contains Larga Language Model. SO it is frozen. Might make errors
+        self.skill_embedder = Front_Part()
+        
+        # Encoder for image observation
+        self.image_encoder = Image_Captioning_Model() # this model outputs Text, so watch out for the use
+
+        # obs embedder
+        obs_subspace = observation_space.spaces["obs"]
+        self.obs_embedder = nn.Linear(obs_subspace.shape[0], 16)
+        
+        # skill seq encoder
+        self.skill_seq_encoder = nn.Linear(128, 16)
+
+
+    def forward(self, observations) -> th.Tensor:
+        print("SDFsdfsddfs")
+        encoded_tensor_list = []
+
+        # Get Skill Sequence Embedding
+        if observations["initial_step"] == 0:
+            print("obs high inst: ", self.high_instruction_dict["high_instruction"])
+            
+            self.skill_sequence_embeddings = self.skill_embedding_padding(
+                self.skill_embedder(
+                    observations["image_obs"], 
+                    self.high_instruction_dict[observations["high_instruction"]]
+                )
+            )
+            print("skill seq embeddings: ", self.skill_sequence_embeddings)
+            exit()
+        assert self.skill_sequence_embeddings != None, "No Skill embeddings!!!!"
+                    
+        # Get State
+        encoded_tensor_list.append(self.obs_embedder(observations["obs"]))
+        
+        # Get Skill Embedding
+        encoded_tensor_list.append(self.skill_seq_encoder(self.skill_sequence_embeddings))
+        
+        return th.cat(encoded_tensor_list, dim=1)
     
-
-
+    def skill_embedding_padding(self, skill_embedding, max_seq_len:int=256):
+        pad_size = max_seq_len - np.shape(skill_embedding)[1]
+        padded_skill_emb = np.pad(skill_embedding, pad_width=((0,0), (0,pad_size), (0,0)), mode='constant', constant_values=0)
+        return padded_skill_emb
+    
 
 
 

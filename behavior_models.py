@@ -23,6 +23,8 @@ from transformers import GenerationConfig
 from parameters import device
 
 
+
+
 class Prompt_Model(nn.Module):
     """
     Prompt Model for merging Initial Observation and High-level Instruction

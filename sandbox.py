@@ -1,3 +1,61 @@
+
+
+
+
+max_it = 10
+done = False
+while not done and max_it:
+    print(f"done: {done}, it: {max_it}")
+    
+    if max_it == 4:
+        done = True
+    
+    max_it -= 1
+    
+
+
+
+
+
+exit()
+
+import numpy as np
+import gymnasium as gym
+
+
+ll = [1,2,3,4]
+print(ll)
+ll.append(None)
+print(ll)
+
+
+# print(np.zeros((1, *tuple(None)), dtype='<U'))
+
+# ttt = gym.spaces.Text(5)
+# print(ttt.shape)
+# print(ttt.sample())
+
+
+
+dd = dict()
+print(dd)
+dd["a"] = 4
+print(dd)
+dd[1] = "b"
+print(dd)
+
+gg = {
+    'a':1,
+    'b':2,
+    # 'c':3,
+    'd':4
+}
+
+print(gg)
+
+
+exit()
+
 import numpy as np
 
 

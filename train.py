@@ -26,7 +26,7 @@ from parameters import device
 
 from behavior_framework import Front_Part
 from behavior_models import Image_Captioning_Model, Behavior_LLM, SkillEmbedder
-from behavior_policy import CustomCombinedExtractor, CustomMultiInputActorCriticPolicy
+from behavior_policy import CustomCombinedExtractor, CustomCombinedMultiExtractor
 import metaworld_env
 
 # virtual display for headless mujoco
@@ -73,13 +73,6 @@ class MetaWorldEnv(gym.Env):
 
 
 
-def render(env:gym.Env, offscreen=True, camera_name='corner3', resolution=(640, 480)):
-        image = env.render(offscreen, camera_name, resolution)
-        return image
-
-
-
-
 
 def train_single_step_tasks():
     ## Get Behavior LLM
@@ -88,35 +81,29 @@ def train_single_step_tasks():
     ml10 = metaworld.ML10() # Construct the benchmark, sampling tasks
 
     training_envs = []
-    env_checks=[]
     for name, env_cls in ml10.train_classes.items():        
         env = env_cls(render_mode='rgb_array')
         task = random.choice([task for task in ml10.train_tasks if task.env_name == name])
         env.set_task(task)
         
         state, _ = env.reset()
-        # print(vars(env))
-        # exit()
-        
-        # env_checks.append([name, env.observation_space.shape])
-        # print("env obs shape : ", env.observation_space)
         
         ## Get initial observation of environment
         initial_obs = env.render()
         Image.fromarray(initial_obs).save("test.png")
         
         ## get skill sequence embedding
-        output = test_model(initial_obs=initial_obs, instruction=name)
+        output = test_model(initial_obs=initial_obs, instruction=name).numpy()
         print(f"Name: {name}, Output : {output.shape}")        
         
         env = TimeLimit(env, max_episode_steps=1000)
         env = metaworld_env.BehaviorWrapper(env, name, output)
         
         training_envs.append(env)
-    # print("Num of Training ENVs : ", len(training_envs))
-    # print("ENV check : ", env_checks)
-    # exit()
+
     
+    # Multi Task Env Wrapper
+    env = metaworld_env.MultiTaskWrapper(training_envs)        
     
     ## Get Model
     policy_kwargs = dict(
@@ -124,10 +111,81 @@ def train_single_step_tasks():
     )
     model = PPO(policy="MultiInputPolicy", env=env, policy_kwargs=policy_kwargs)
         
+    ## Learn the Model
+    checkpoint_callback = CheckpointCallback(
+        save_freq=100,
+        save_path="./logs/",
+        name_prefix="bllm_rl_model",
+        save_replay_buffer=True,
+        save_vecnormalize=True,
+    )
+    eval_callback = EvalCallback(
+        eval_env=env, 
+        best_model_save_path="./logs/best_model",
+        log_path="./logs/results",
+        eval_freq=500
+    )
+    callback = CallbackList([checkpoint_callback, eval_callback])
+    model.learn(total_timesteps=10000, callback=callback, progress_bar=True)
+    exit()
     
+    # Final Test
+    model.load(path="logs/best_model/best_model.zip")
+    pass
+
+
+
+
+high_instruction_dict = dict()
+
+
+def train_multi_step_tasks():
+    ml10 = metaworld.ML10() # Construct the benchmark, sampling tasks
+    
+    ## hate this code
+    # high_instruction_dict = dict()
+    # for name, env_cls in ml10.train_classes.items():  
+    #     name_num = len(high_instruction_dict)
+    #     high_instruction_dict[name_num] = name 
+        
+    # print(high_instruction_dict)
+    # exit()
+
+
+
+    training_envs = []
+    name_num = 0
+    for name, env_cls in ml10.train_classes.items():        
+        env = env_cls(render_mode='rgb_array')
+        task = random.choice([task for task in ml10.train_tasks if task.env_name == name])
+        env.set_task(task)
+        
+        state, _ = env.reset()
+        
+        ##### for checking #######
+        initial_obs = env.render()
+        Image.fromarray(initial_obs).save(os.path.join("logs/renders", name + '.' + "png"))
+        ##########################
+        
+        env = TimeLimit(env, max_episode_steps=1000)
+        env = metaworld_env.BehaviorMultiWrapper(env, name_num)
+        env.reset()
+        
+        training_envs.append(env)
+        name_num += 1
+
     # Multi Task Env Wrapper
-    env = metaworld_env.MultiTaskWrapper(training_envs)    
+    env = metaworld_env.MultiTaskWrapper(training_envs)        
     
+    
+    ## Get Model
+    print("Getting Policy and Model")
+    policy_kwargs = dict(
+        features_extractor_class=CustomCombinedMultiExtractor,
+    )
+    model = PPO(policy="MultiInputPolicy", env=env, policy_kwargs=policy_kwargs)
+    exit()
+        
     
     ## Learn the Model
     checkpoint_callback = CheckpointCallback(
@@ -144,12 +202,12 @@ def train_single_step_tasks():
         eval_freq=50
     )
     callback = CallbackList([checkpoint_callback, eval_callback])
+    exit()
     model.learn(total_timesteps=100, callback=callback, progress_bar=True)
     
-    
+    # Final Test
+    model.load(path="logs/best_model/best_model.zip")
     pass
-
-
 
 
 
@@ -158,6 +216,7 @@ if __name__=="__main__":
     print("Training Behavior LLM framework!!")
     
     train_single_step_tasks()
+    # train_multi_step_tasks()
     
     exit()
     
