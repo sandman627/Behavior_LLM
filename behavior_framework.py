@@ -35,6 +35,9 @@ class Front_Part(torch.nn.Module):
         # Front Part
         self.image_cap_model = Image_Captioning_Model()
         self.behavior_LLM = Behavior_LLM()
+        # for k,v in self.behavior_LLM.named_parameters():
+        #     print(k,type(v))
+        # exit()
         self.skill_embedder = SkillEmbedder()
         
         # Output size : torch.Size([1, 10, 768])
@@ -44,15 +47,15 @@ class Front_Part(torch.nn.Module):
     def forward(self,initial_obs, instruction):
         
         image_cap = self.image_cap_model(initial_obs)
-        # print("image cap : ", image_cap)
+        print("image cap : ", image_cap)
 
         initial_input = image_cap + ". In this situation, I need to " + instruction
 
         skill_description_seq = self.behavior_LLM(self.task_prompt, initial_input)
-        # print("skill des seq : ", skill_description_seq)
+        print("skill des seq : ", skill_description_seq)
         
         skill_embedding_seq = self.skill_embedder(skill_description_seq)
-        # print("skill emb seq : ", skill_embedding_seq)
+        print("skill emb seq : ", skill_embedding_seq)
         
         return skill_embedding_seq
 
